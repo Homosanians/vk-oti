@@ -1,0 +1,98 @@
+name: oti-lakehouse
+
+x-lakekeeper-env: &lakekeeper-env
+  LAKEKEEPER__PG_ENCRYPTION_KEY: "This-is-NOT-Secure!"
+  LAKEKEEPER__PG_DATABASE_URL_READ: postgresql://postgres:postgres@lakehouse-pg:5432/postgres
+  LAKEKEEPER__PG_DATABASE_URL_WRITE: postgresql://postgres:postgres@lakehouse-pg:5432/postgres
+
+services:
+  minio:
+    image: pgsty/minio:RELEASE.2026-08-04T00-00-00Z
+    container_name: lakehouse-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports: ["9000:9000", "9001:9001"]
+    volumes: ["minio-data:/data"]
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      retries: 20
+
+  lakehouse-pg:
+    image: postgres:17
+    container_name: lakehouse-pg
+    environment:
+      POSTGRES_PASSWORD: postgres
+    ports: ["5432:5432"]
+    volumes: ["pg-data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 3s
+      retries: 30
+
+  lakekeeper-migrate:
+    image: quay.io/lakekeeper/catalog:v0.14.1
+    container_name: lakekeeper-migrate
+    command: migrate
+    environment: *lakekeeper-env
+    depends_on:
+      lakehouse-pg: { condition: service_healthy }
+    restart: "no"
+
+  lakekeeper:
+    image: quay.io/lakekeeper/catalog:v0.14.1
+    container_name: lakekeeper
+    command: serve
+    environment: *lakekeeper-env
+    ports: ["8181:8181"]
+    depends_on:
+      lakekeeper-migrate: { condition: service_completed_successfully }
+      minio: { condition: service_healthy }
+
+  trino-cache-init:
+    image: alpine:3.20
+    command: chown -R 1000:1000 /cache
+    volumes: ["trino-cache:/cache"]
+    restart: "no"
+
+  trino:
+    image: trinodb/trino:476
+    container_name: trino
+    ports: ["8080:8080"]
+    volumes:
+      - ./trino/catalog:/etc/trino/catalog:ro
+      - ./trino/jvm.config:/etc/trino/jvm.config:ro
+      - ./trino/config.properties:/etc/trino/config.properties:ro
+      - trino-cache:/tmp/trino-cache
+    depends_on:
+      lakekeeper: { condition: service_started }
+      trino-cache-init: { condition: service_completed_successfully }
+
+  spark:
+    profiles: ["spark"]
+    build: ./spark
+    image: oti-spark:3.5.9-iceberg1.10.2
+    container_name: spark
+    ports: ["4040:4040"]
+    volumes:
+      - ./spark/jobs:/opt/jobs:ro
+      - ./bench:/opt/bench:ro
+      - ./results:/opt/results
+    command: ["sleep", "infinity"]
+    depends_on: [lakekeeper]
+
+  tools:
+    profiles: ["tools"]
+    build: ./tools
+    image: oti-tools:py3.12
+    volumes:
+      - ./bench:/opt/bench:ro
+      - ./results:/opt/results
+      - ./docs:/opt/docs
+
+volumes:
+  minio-data:
+  pg-data:
+  trino-cache:

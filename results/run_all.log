@@ -1,0 +1,547 @@
+##### 2026-10-17 16:03:01 sf1: матрица форматов/кодеков (эффект малого объёма)
+== bronze (ZSTD)
+  [     0.2s] DROP TABLE IF EXISTS bronze.lakehouse.raw_nation
+  [     0.1s] DROP TABLE IF EXISTS bronze.lakehouse.raw_customer
+  [     0.0s] DROP TABLE IF EXISTS bronze.lakehouse.raw_orders
+  [     0.0s] DROP TABLE IF EXISTS bronze.lakehouse.raw_lineitem
+  [     5.1s] CREATE TABLE bronze.lakehouse.raw_nation WITH (format = 'PARQUET') AS SELECT n.*, 'tpch.sf
+  [     2.5s] CREATE TABLE bronze.lakehouse.raw_customer WITH (format = 'PARQUET') AS SELECT c.*, 'tpch.
+  [     3.5s] CREATE TABLE bronze.lakehouse.raw_orders WITH (format = 'PARQUET') AS SELECT o.*, 'tpch.sf
+  [    10.3s] CREATE TABLE bronze.lakehouse.raw_lineitem WITH (format = 'PARQUET') AS SELECT l.*, 'tpch.
+== silver (ZSTD)
+  [     0.1s] DROP TABLE IF EXISTS silver.lakehouse.dim_customer
+  [     0.3s] DROP TABLE IF EXISTS silver.lakehouse.fact_order_line
+  [     0.1s] DROP TABLE IF EXISTS silver.lakehouse.dq_report
+  [     4.7s] CREATE TABLE silver.lakehouse.dim_customer WITH (format = 'PARQUET') AS WITH dedup AS ( --
+  [    14.9s] CREATE TABLE silver.lakehouse.fact_order_line WITH ( format = 'PARQUET', partitioning = AR
+  [     2.0s] CREATE TABLE silver.lakehouse.dq_report WITH (format = 'PARQUET') AS SELECT 'bronze.raw_cu
+== gold (SNAPPY)
+  [     0.1s] DROP TABLE IF EXISTS gold.lakehouse.returned_revenue_by_customer_quarter
+  [     0.0s] DROP TABLE IF EXISTS gold.lakehouse.q10_top20_returned_customers
+  [     1.8s] CREATE TABLE gold.lakehouse.returned_revenue_by_customer_quarter WITH (format = 'PARQUET',
+  [     1.3s] CREATE TABLE gold.lakehouse.q10_top20_returned_customers WITH (format = 'PARQUET') AS SELE
+  bronze.lakehouse.raw_nation                             rows=          25 files=    1        0.0 MB
+  bronze.lakehouse.raw_customer                           rows=     150,000 files=    1        7.8 MB
+  bronze.lakehouse.raw_orders                             rows=   1,500,000 files=    2       35.0 MB
+  bronze.lakehouse.raw_lineitem                           rows=   6,001,215 files=    9      147.7 MB
+  silver.lakehouse.dim_customer                           rows=     150,000 files=    1        8.3 MB
+  silver.lakehouse.fact_order_line                        rows=   6,001,215 files=   80       91.4 MB
+  silver.lakehouse.dq_report                              rows=           6 files=    6        0.0 MB
+  gold.lakehouse.returned_revenue_by_customer_quarter     rows=     502,809 files=    4        5.8 MB
+  gold.lakehouse.q10_top20_returned_customers             rows=          20 files=    1        0.0 MB
+== validate gold vs tpch reference
+  [     3.0s] WITH reference AS ( SELECT c.custkey, round(sum(l.extendedprice * (1 - l.discount)), 2) AS
+  VALIDATION OK
+saved C:\Users\Alexander\source\repos\oti-lab1\p1\results\pipeline_sf1.json
+== PARQUET / NONE
+    write customer      1.7s cpu=     0.5s      23.4 MB files=1
+    write orders        4.3s cpu=     3.0s     107.4 MB files=2
+    write lineitem     10.9s cpu=    20.2s     354.0 MB files=9
+    trino q10        cold=  7.78s warm_med=  0.65s read=   131.4 MB
+    trino agg_scan   cold=  3.48s warm_med=  0.19s read=    66.9 MB
+    trino agg_narrow cold=  2.68s warm_med=  0.09s read=    57.7 MB
+    spark q10        cold= 21.49s warm_med=  0.95s
+    spark agg_scan   cold=  0.75s warm_med=  0.44s
+    spark agg_narrow cold=  0.22s warm_med=  0.20s
+    meta: codec=['UNCOMPRESSED'] footer=20 KB
+== PARQUET / SNAPPY
+    write customer      1.5s cpu=     0.5s      11.8 MB files=1
+    write orders        3.7s cpu=     3.1s      51.0 MB files=2
+    write lineitem      8.2s cpu=    20.7s     198.9 MB files=9
+    trino q10        cold=  4.60s warm_med=  0.58s read=    79.9 MB
+    trino agg_scan   cold=  2.52s warm_med=  0.19s read=    55.9 MB
+    trino agg_narrow cold=  2.01s warm_med=  0.09s read=    47.0 MB
+    spark q10        cold= 16.90s warm_med=  1.25s
+    spark agg_scan   cold=  0.81s warm_med=  0.48s
+    spark agg_narrow cold=  0.32s warm_med=  0.19s
+    meta: codec=['SNAPPY'] footer=20 KB
+== PARQUET / LZ4
+Traceback (most recent call last):
+  File "C:\Users\Alexander\source\repos\oti-lab1\p1\bench\benchmark.py", line 153, in <module>
+    main()
+  File "C:\Users\Alexander\source\repos\oti-lab1\p1\bench\benchmark.py", line 136, in main
+    rec["write"] = write_cell(fmt, codec)
+  File "C:\Users\Alexander\source\repos\oti-lab1\p1\bench\benchmark.py", line 57, in write_cell
+    r = query(f"CREATE TABLE {p}{t} WITH (format = '{fmt}') AS "
+  File "C:\Users\Alexander\source\repos\oti-lab1\p1\bench\trino_client.py", line 34, in query
+    raise TrinoError(f"{e.get('errorName')}: {e.get('message')}\nSQL: {sql[:300]}")
+trino_client.TrinoError: NOT_SUPPORTED: Compression codec LZ4 not supported for Parquet
+SQL: CREATE TABLE bronze.bench.parquet_lz4_customer WITH (format = 'PARQUET') AS SELECT * FROM bronze.lakehouse.raw_customer
+##### 2026-10-17 16:08:56 sf1: матрица форматов/кодеков (эффект малого объёма)
+  File "C:\Users\Alexander\source\repos\oti-lab1\p1\bench\benchmark.py", line 147
+    f.write(json.dumps(rec, ensure_ascii=False) + "
+                                                  ^
+SyntaxError: unterminated string literal (detected at line 147)
+##### 2026-10-17 16:09:15 sf1: матрица форматов/кодеков (эффект малого объёма)
+skip PARQUET/NONE (уже есть)
+skip PARQUET/SNAPPY (уже есть)
+== PARQUET / LZ4
+    НЕ ПОДДЕРЖИВАЕТСЯ: NOT_SUPPORTED: Compression codec LZ4 not supported for Parquet
+skip PARQUET/ZSTD (уже есть)
+== PARQUET / GZIP
+    write customer      2.1s cpu=     1.3s       7.7 MB files=1
+    write orders        6.2s cpu=     7.0s      33.5 MB files=2
+    write lineitem     10.9s cpu=    33.4s     144.2 MB files=9
+    trino q10        cold=  4.25s warm_med=  0.59s read=    53.1 MB
+    trino agg_scan   cold=  2.29s warm_med=  0.22s read=    43.6 MB
+    trino agg_narrow cold=  2.61s warm_med=  0.11s read=    36.8 MB
+    spark q10        cold= 16.00s warm_med=  1.00s
+    spark agg_scan   cold=  0.77s warm_med=  0.48s
+    spark agg_narrow cold=  0.28s warm_med=  0.22s
+    meta: codec=['GZIP'] footer=20 KB
+== ORC / NONE
+    write customer      2.4s cpu=     0.8s      21.6 MB files=1
+    write orders        5.0s cpu=     3.4s     105.5 MB files=2
+    write lineitem     14.3s cpu=    21.6s     466.8 MB files=9
+    trino q10        cold= 10.45s warm_med=  0.54s read=   153.7 MB
+    trino agg_scan   cold=  7.63s warm_med=  0.26s read=   174.4 MB
+    trino agg_narrow cold=  6.23s warm_med=  0.08s read=    68.7 MB
+    spark q10        cold= 23.90s warm_med=  1.58s
+    spark agg_scan   cold=  1.18s warm_med=  0.97s
+    spark agg_narrow cold=  0.91s warm_med=  0.67s
+    meta: codec=['NONE'] footer=21 KB
+== ORC / SNAPPY
+    write customer      1.6s cpu=     0.6s      10.7 MB files=1
+    write orders        4.2s cpu=     3.3s      46.2 MB files=2
+    write lineitem      9.5s cpu=    21.9s     212.9 MB files=9
+    trino q10        cold=  6.18s warm_med=  0.61s read=    91.9 MB
+    trino agg_scan   cold=  4.01s warm_med=  0.31s read=    88.1 MB
+    trino agg_narrow cold=  3.31s warm_med=  0.08s read=    57.1 MB
+    spark q10        cold= 20.16s warm_med=  1.55s
+    spark agg_scan   cold=  1.70s warm_med=  1.07s
+    spark agg_narrow cold=  0.75s warm_med=  0.63s
+    meta: codec=['SNAPPY'] footer=12 KB
+== ORC / LZ4
+    write customer      1.5s cpu=     0.5s      11.3 MB files=1
+    write orders        4.1s cpu=     3.3s      48.7 MB files=2
+    write lineitem      9.5s cpu=    21.1s     230.7 MB files=9
+    trino q10        cold=  8.11s warm_med=  0.47s read=    90.2 MB
+    trino agg_scan   cold=  5.15s warm_med=  0.28s read=    91.1 MB
+    trino agg_narrow cold=  4.62s warm_med=  0.08s read=    51.2 MB
+    spark q10        cold= 18.36s warm_med=  1.81s
+    spark agg_scan   cold=  1.14s warm_med=  1.05s
+    spark agg_narrow cold=  0.76s warm_med=  0.65s
+    meta: codec=['LZ4'] footer=12 KB
+== ORC / ZSTD
+    write customer      1.5s cpu=     0.5s       7.2 MB files=1
+    write orders        3.6s cpu=     3.4s      32.8 MB files=2
+    write lineitem      8.1s cpu=    21.1s     153.9 MB files=9
+    trino q10        cold=  4.92s warm_med=  0.52s read=    66.2 MB
+    trino agg_scan   cold=  3.71s warm_med=  0.33s read=    59.8 MB
+    trino agg_narrow cold=  2.97s warm_med=  0.10s read=    43.1 MB
+    spark q10        cold= 16.07s warm_med=  1.54s
+    spark agg_scan   cold=  1.32s warm_med=  1.08s
+    spark agg_narrow cold=  0.80s warm_med=  0.71s
+    meta: codec=['ZSTD'] footer=10 KB
+skip ORC/GZIP (уже есть)
+bronze bucket after run: 0.38 GiB
+  trino q10       jvm_cold         23.38s  cpu=    3.6s read=     53.8 MB
+  trino q10       os_cold           4.14s  cpu=    1.5s read=     53.8 MB
+  trino q10       os_warm           0.69s  cpu=    0.7s read=     53.8 MB
+  trino q10       fs_cache_fill    25.49s  cpu=    3.2s read=     53.8 MB
+  trino q10       fs_cache_hit      4.29s  cpu=    0.9s read=     53.8 MB
+  trino q10       fs_cache_warm     0.70s  cpu=    0.6s read=     53.8 MB
+  trino agg_scan  jvm_cold         17.64s  cpu=    4.3s read=     45.7 MB
+  trino agg_scan  os_cold           2.67s  cpu=    0.5s read=     45.7 MB
+  trino agg_scan  os_warm           0.32s  cpu=    0.6s read=     45.7 MB
+  trino agg_scan  fs_cache_fill    18.77s  cpu=    4.6s read=     45.7 MB
+  trino agg_scan  fs_cache_hit      2.24s  cpu=    0.5s read=     45.7 MB
+  trino agg_scan  fs_cache_warm     0.31s  cpu=    0.6s read=     45.7 MB
+  cold floor (raw_nation after drop_caches): 0.06s
+  spark {'q10': {'cold_s': 17.973, 'warm_median_s': 0.937, 'warm_min_s': 0.837, 'result_rows': 20, 'cached_median_s': 0.597}, 'agg_scan': {'cold_s': 0.721, 'warm_median_s': 0.458, 'warm_min_s': 0.457, 'result_rows': 4, 'cached_median_s': 0.518}, 'agg_narrow': {'cold_s': 0.252, 'warm_median_s': 0.192, 'warm_min_s': 0.177, 'result_rows': 1, 'cached_median_s': 0.12}}
+saved C:\Users\Alexander\source\repos\oti-lab1\p1\results\cache_sf1.json
+##### 2026-10-17 16:29:08 sf50: медальон Bronze -> Silver -> Gold + сверка
+== bronze (ZSTD)
+  [     0.2s] DROP TABLE IF EXISTS bronze.lakehouse.raw_nation
+  [     0.1s] DROP TABLE IF EXISTS bronze.lakehouse.raw_customer
+  [     0.1s] DROP TABLE IF EXISTS bronze.lakehouse.raw_orders
+  [     0.0s] DROP TABLE IF EXISTS bronze.lakehouse.raw_lineitem
+  [    25.1s] CREATE TABLE bronze.lakehouse.raw_nation WITH (format = 'PARQUET') AS SELECT n.*, 'tpch.sf
+  [    18.7s] CREATE TABLE bronze.lakehouse.raw_customer WITH (format = 'PARQUET') AS SELECT c.*, 'tpch.
+  [    66.6s] CREATE TABLE bronze.lakehouse.raw_orders WITH (format = 'PARQUET') AS SELECT o.*, 'tpch.sf
+Traceback (most recent call last):
+  File "C:\Users\Alexander\source\repos\oti-lab1\p1\bench\pipeline.py", line 86, in <module>
+    main()
+  File "C:\Users\Alexander\source\repos\oti-lab1\p1\bench\pipeline.py", line 51, in main
+    res = run_script(ROOT / "sql" / script, params,
+  File "C:\Users\Alexander\source\repos\oti-lab1\p1\bench\trino_client.py", line 90, in run_script
+    r = query(s, **kw)
+  File "C:\Users\Alexander\source\repos\oti-lab1\p1\bench\trino_client.py", line 41, in query
+    resp = json.load(urllib.request.urlopen(urllib.request.Request(nxt, headers=headers)))
+  File "C:\Users\Alexander\AppData\Local\Programs\Python\Python310\lib\urllib\request.py", line 216, in urlopen
+    return opener.open(url, data, timeout)
+  File "C:\Users\Alexander\AppData\Local\Programs\Python\Python310\lib\urllib\request.py", line 519, in open
+    response = self._open(req, data)
+  File "C:\Users\Alexander\AppData\Local\Programs\Python\Python310\lib\urllib\request.py", line 536, in _open
+    result = self._call_chain(self.handle_open, protocol, protocol +
+  File "C:\Users\Alexander\AppData\Local\Programs\Python\Python310\lib\urllib\request.py", line 496, in _call_chain
+    result = func(*args)
+  File "C:\Users\Alexander\AppData\Local\Programs\Python\Python310\lib\urllib\request.py", line 1377, in http_open
+    return self.do_open(http.client.HTTPConnection, req)
+  File "C:\Users\Alexander\AppData\Local\Programs\Python\Python310\lib\urllib\request.py", line 1352, in do_open
+    r = h.getresponse()
+  File "C:\Users\Alexander\AppData\Local\Programs\Python\Python310\lib\http\client.py", line 1374, in getresponse
+    response.begin()
+  File "C:\Users\Alexander\AppData\Local\Programs\Python\Python310\lib\http\client.py", line 318, in begin
+    version, status, reason = self._read_status()
+  File "C:\Users\Alexander\AppData\Local\Programs\Python\Python310\lib\http\client.py", line 287, in _read_status
+    raise RemoteDisconnected("Remote end closed connection without"
+http.client.RemoteDisconnected: Remote end closed connection without response
+##### 2026-10-17 16:44:26 sf1: матрица форматов/кодеков (эффект малого объёма)
+skip PARQUET/NONE (уже есть)
+skip PARQUET/SNAPPY (уже есть)
+skip PARQUET/LZ4 (уже есть)
+skip PARQUET/ZSTD (уже есть)
+skip PARQUET/GZIP (уже есть)
+skip ORC/NONE (уже есть)
+skip ORC/SNAPPY (уже есть)
+skip ORC/LZ4 (уже есть)
+skip ORC/ZSTD (уже есть)
+skip ORC/GZIP (уже есть)
+bronze bucket after run: 2.21 GiB
+##### 2026-10-17 16:45:00 sf1: матрица форматов/кодеков (эффект малого объёма)
+skip PARQUET/NONE (уже есть)
+skip PARQUET/SNAPPY (уже есть)
+skip PARQUET/LZ4 (уже есть)
+skip PARQUET/ZSTD (уже есть)
+skip PARQUET/GZIP (уже есть)
+skip ORC/NONE (уже есть)
+skip ORC/SNAPPY (уже есть)
+skip ORC/LZ4 (уже есть)
+skip ORC/ZSTD (уже есть)
+skip ORC/GZIP (уже есть)
+bronze bucket after run: 2.21 GiB
+##### 2026-10-17 16:45:02 sf50: медальон Bronze -> Silver -> Gold + сверка
+== bronze (ZSTD)
+  [     4.0s] DROP TABLE IF EXISTS bronze.lakehouse.raw_nation
+  [     0.1s] DROP TABLE IF EXISTS bronze.lakehouse.raw_customer
+  [     0.1s] DROP TABLE IF EXISTS bronze.lakehouse.raw_orders
+  [     0.0s] DROP TABLE IF EXISTS bronze.lakehouse.raw_lineitem
+  [    10.3s] CREATE TABLE bronze.lakehouse.raw_nation WITH (format = 'PARQUET') AS SELECT n.*, 'tpch.sf
+  [    18.4s] CREATE TABLE bronze.lakehouse.raw_customer WITH (format = 'PARQUET') AS SELECT c.*, 'tpch.
+  [    63.6s] CREATE TABLE bronze.lakehouse.raw_orders WITH (format = 'PARQUET') AS SELECT o.*, 'tpch.sf
+  [   232.0s] CREATE TABLE bronze.lakehouse.raw_lineitem WITH (format = 'PARQUET') AS SELECT l.*, 'tpch.
+== silver (ZSTD)
+  [     0.1s] DROP TABLE IF EXISTS silver.lakehouse.dim_customer
+  [     0.1s] DROP TABLE IF EXISTS silver.lakehouse.fact_order_line
+  [     0.1s] DROP TABLE IF EXISTS silver.lakehouse.dq_report
+  [    30.5s] CREATE TABLE silver.lakehouse.dim_customer WITH (format = 'PARQUET') AS WITH dedup AS ( --
+Traceback (most recent call last):
+  File "C:\Users\Alexander\source\repos\oti-lab1\p1\bench\pipeline.py", line 86, in <module>
+    main()
+  File "C:\Users\Alexander\source\repos\oti-lab1\p1\bench\pipeline.py", line 51, in main
+    res = run_script(ROOT / "sql" / script, params,
+  File "C:\Users\Alexander\source\repos\oti-lab1\p1\bench\trino_client.py", line 90, in run_script
+    r = query(s, **kw)
+  File "C:\Users\Alexander\source\repos\oti-lab1\p1\bench\trino_client.py", line 34, in query
+    raise TrinoError(f"{e.get('errorName')}: {e.get('message')}\nSQL: {sql[:300]}")
+trino_client.TrinoError: EXCEEDED_LOCAL_MEMORY_LIMIT: Query exceeded per-node memory limit of 5GB [Allocated: 5.00GB, Delta: 1.29MB, Top Consumers: {HashBuilderOperator=2.91GB, TableWriterOperator=1.63GB, ScanFilterAndProjectOperator=378.61MB}]
+SQL: 
+CREATE TABLE silver.lakehouse.fact_order_line
+WITH (
+  format       = 'PARQUET',
+  partitioning = ARRAY['month(orderdate)'],
+  sorted_by    = ARRAY['returnflag', 'custkey']
+)
+AS
+SELECT
+  l.orderkey,
+  l.linenumber,
+  o.custkey,
+  o.orderdate,
+  o.orderstatus,
+  upper(l.returnflag)                  
+##### 2026-10-17 16:53:04 sf50: Silver/Gold поверх готового Bronze (инкрементальный факт)
+== silver (ZSTD)
+  [     0.6s] DROP TABLE IF EXISTS silver.lakehouse.dim_customer
+  [     0.0s] DROP TABLE IF EXISTS silver.lakehouse.fact_order_line
+  [     0.0s] DROP TABLE IF EXISTS silver.lakehouse.dq_report
+  [    25.6s] CREATE TABLE silver.lakehouse.dim_customer WITH (format = 'PARQUET') AS WITH dedup AS ( --
+  [     0.5s] CREATE TABLE silver.lakehouse.fact_order_line WITH ( format = 'PARQUET', partitioning = AR
+  [   133.0s] INSERT INTO silver.lakehouse.fact_order_line SELECT l.orderkey, l.linenumber, o.custkey, o
+  [   103.7s] INSERT INTO silver.lakehouse.fact_order_line SELECT l.orderkey, l.linenumber, o.custkey, o
+  [    92.6s] INSERT INTO silver.lakehouse.fact_order_line SELECT l.orderkey, l.linenumber, o.custkey, o
+  [    95.9s] INSERT INTO silver.lakehouse.fact_order_line SELECT l.orderkey, l.linenumber, o.custkey, o
+  [    85.5s] INSERT INTO silver.lakehouse.fact_order_line SELECT l.orderkey, l.linenumber, o.custkey, o
+  [    82.4s] INSERT INTO silver.lakehouse.fact_order_line SELECT l.orderkey, l.linenumber, o.custkey, o
+  [    62.1s] INSERT INTO silver.lakehouse.fact_order_line SELECT l.orderkey, l.linenumber, o.custkey, o
+  [    12.5s] CREATE TABLE silver.lakehouse.dq_report WITH (format = 'PARQUET') AS SELECT 'bronze.raw_cu
+== gold (SNAPPY)
+  [     0.1s] DROP TABLE IF EXISTS gold.lakehouse.returned_revenue_by_customer_quarter
+  [     0.0s] DROP TABLE IF EXISTS gold.lakehouse.q10_top20_returned_customers
+  [    45.4s] CREATE TABLE gold.lakehouse.returned_revenue_by_customer_quarter WITH (format = 'PARQUET',
+  [     8.8s] CREATE TABLE gold.lakehouse.q10_top20_returned_customers WITH (format = 'PARQUET') AS SELE
+  bronze.lakehouse.raw_nation                             rows=          25 files=    1        0.0 MB
+  bronze.lakehouse.raw_customer                           rows=   7,500,000 files=   12      389.2 MB
+  bronze.lakehouse.raw_orders                             rows=  75,000,000 files=   16     1874.5 MB
+  bronze.lakehouse.raw_lineitem                           rows= 300,005,811 files=   16     7766.1 MB
+  silver.lakehouse.dim_customer                           rows=   7,500,000 files=   13      412.7 MB
+  silver.lakehouse.fact_order_line                        rows= 300,005,811 files=  146     4254.7 MB
+  silver.lakehouse.dq_report                              rows=           6 files=    6        0.0 MB
+  gold.lakehouse.returned_revenue_by_customer_quarter     rows=  25,432,805 files=    9      296.6 MB
+  gold.lakehouse.q10_top20_returned_customers             rows=          20 files=    1        0.0 MB
+== validate gold vs tpch reference
+  [   287.0s] WITH reference AS ( SELECT c.custkey, round(sum(l.extendedprice * (1 - l.discount)), 2) AS
+  VALIDATION OK
+saved C:\Users\Alexander\source\repos\oti-lab1\p1\results\pipeline_sf50.json
+##### 2026-10-17 17:10:22 sf1: матрица форматов/кодеков (эффект малого объёма)
+skip PARQUET/NONE (уже есть)
+skip PARQUET/SNAPPY (уже есть)
+skip PARQUET/LZ4 (уже есть)
+skip PARQUET/ZSTD (уже есть)
+skip PARQUET/GZIP (уже есть)
+skip ORC/NONE (уже есть)
+skip ORC/SNAPPY (уже есть)
+skip ORC/LZ4 (уже есть)
+skip ORC/ZSTD (уже есть)
+skip ORC/GZIP (уже есть)
+bronze bucket after run: 9.8 GiB
+##### 2026-10-17 17:10:24 sf50: медальон Bronze -> Silver -> Gold + сверка
+##### 2026-10-17 17:10:24 sf50: матрица форматов/кодеков
+== PARQUET / NONE
+    write customer     29.6s cpu=    27.5s    1169.4 MB files=13
+    write orders      146.5s cpu=   220.7s    5815.7 MB files=16
+    write lineitem    634.0s cpu=   936.0s   19763.5 MB files=26
+Traceback (most recent call last):
+  File "C:\Users\Alexander\source\repos\oti-lab1\p1\bench\benchmark.py", line 165, in <module>
+    main()
+  File "C:\Users\Alexander\source\repos\oti-lab1\p1\bench\benchmark.py", line 149, in main
+    rec["trino"] = time_queries(fmt, codec)
+  File "C:\Users\Alexander\source\repos\oti-lab1\p1\bench\benchmark.py", line 75, in time_queries
+    drop_os_caches()
+  File "C:\Users\Alexander\source\repos\oti-lab1\p1\bench\benchmark.py", line 38, in drop_os_caches
+    sh(["docker", "run", "--rm", "--privileged", "alpine:3.20",
+  File "C:\Users\Alexander\source\repos\oti-lab1\p1\bench\benchmark.py", line 33, in sh
+    return subprocess.run(cmd, shell=isinstance(cmd, str), check=True, capture_output=True, text=True).stdout
+  File "C:\Users\Alexander\AppData\Local\Programs\Python\Python310\lib\subprocess.py", line 524, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['docker', 'run', '--rm', '--privileged', 'alpine:3.20', 'sh', '-c', 'sync; echo 3 > /proc/sys/vm/drop_caches']' returned non-zero exit status 3221225794.
+##### 2026-10-17 17:41:25 sf1: матрица форматов/кодеков (эффект малого объёма)
+skip PARQUET/NONE (уже есть)
+skip PARQUET/SNAPPY (уже есть)
+skip PARQUET/LZ4 (уже есть)
+skip PARQUET/ZSTD (уже есть)
+skip PARQUET/GZIP (уже есть)
+skip ORC/NONE (уже есть)
+skip ORC/SNAPPY (уже есть)
+skip ORC/LZ4 (уже есть)
+skip ORC/ZSTD (уже есть)
+skip ORC/GZIP (уже есть)
+bronze bucket after run: 35.92 GiB
+##### 2026-10-17 17:41:26 sf50: медальон Bronze -> Silver -> Gold + сверка
+##### 2026-10-17 17:41:26 sf50: матрица форматов/кодеков
+== PARQUET / NONE
+    write customer     25.3s cpu=    32.5s    1169.4 MB files=14
+    write orders      141.3s cpu=   267.6s    5815.9 MB files=16
+Traceback (most recent call last):
+  File "C:\Users\Alexander\source\repos\oti-lab1\p1\bench\benchmark.py", line 165, in <module>
+    main()
+  File "C:\Users\Alexander\source\repos\oti-lab1\p1\bench\benchmark.py", line 137, in main
+    rec["write"] = write_cell(fmt, codec)
+  File "C:\Users\Alexander\source\repos\oti-lab1\p1\bench\benchmark.py", line 57, in write_cell
+    r = query(f"CREATE TABLE {p}{t} WITH (format = '{fmt}') AS "
+  File "C:\Users\Alexander\source\repos\oti-lab1\p1\bench\trino_client.py", line 34, in query
+    raise TrinoError(f"{e.get('errorName')}: {e.get('message')}\nSQL: {sql[:300]}")
+trino_client.TrinoError: EXCEEDED_LOCAL_MEMORY_LIMIT: Query exceeded per-node memory limit of 5GB [Allocated: 5.00GB, Delta: 5.39MB, Top Consumers: {TableScanOperator=3.24GB, TableWriterOperator=1.68GB, LazyOutputBuffer=53.81MB}]
+SQL: CREATE TABLE bronze.bench.parquet_none_lineitem WITH (format = 'PARQUET') AS SELECT * FROM bronze.lakehouse.raw_lineitem
+##### 2026-10-17 20:49:09 sf1: матрица форматов/кодеков (эффект малого объёма)
+skip PARQUET/NONE (уже есть)
+skip PARQUET/SNAPPY (уже есть)
+skip PARQUET/LZ4 (уже есть)
+skip PARQUET/ZSTD (уже есть)
+skip PARQUET/GZIP (уже есть)
+skip ORC/NONE (уже есть)
+skip ORC/SNAPPY (уже есть)
+skip ORC/LZ4 (уже есть)
+skip ORC/ZSTD (уже есть)
+skip ORC/GZIP (уже есть)
+bronze bucket after run: 16.62 GiB
+##### 2026-10-17 20:49:10 sf50: медальон Bronze -> Silver -> Gold + сверка
+##### 2026-10-17 20:49:10 sf50: матрица форматов/кодеков
+== PARQUET / NONE
+    write customer     42.7s cpu=    43.8s    1169.4 MB files=4
+    write orders      173.2s cpu=   198.6s    5814.8 MB files=8
+    write lineitem    632.9s cpu=   874.2s   19770.8 MB files=20
+    trino q10        cold=183.34s warm_med= 94.68s read=  7056.4 MB
+    trino agg_scan   cold= 87.77s warm_med=  3.94s read=  3348.2 MB
+    trino agg_narrow cold= 76.54s warm_med=  1.42s read=  2737.4 MB
+    spark q10        cold=433.20s warm_med=386.35s
+    spark agg_scan   cold=117.44s warm_med= 28.37s
+    spark agg_narrow cold=  6.27s warm_med=  2.91s
+    meta: codec=['UNCOMPRESSED'] footer=328 KB
+== PARQUET / SNAPPY
+    write customer     24.8s cpu=    24.5s     590.6 MB files=4
+    write orders      112.2s cpu=   184.8s    2782.2 MB files=4
+    write lineitem    489.0s cpu=   824.4s   10829.5 MB files=12
+    trino q10        cold=111.09s warm_med=  6.76s read=  3717.0 MB
+    trino agg_scan   cold= 65.88s warm_med=  3.69s read=  2560.7 MB
+    trino agg_narrow cold= 62.21s warm_med=  1.54s read=  2084.9 MB
+    spark q10        cold=225.25s warm_med=289.85s
+    spark agg_scan   cold= 70.91s warm_med=  6.76s
+    spark agg_narrow cold=  2.73s warm_med=  2.60s
+    meta: codec=['SNAPPY'] footer=183 KB
+== PARQUET / LZ4
+    НЕ ПОДДЕРЖИВАЕТСЯ: NOT_SUPPORTED: Compression codec LZ4 not supported for Parquet
+== PARQUET / ZSTD
+    write customer     17.7s cpu=    28.3s     389.5 MB files=4
+    write orders       93.0s cpu=   213.8s    1874.0 MB files=4
+    write lineitem    406.3s cpu=   922.8s    7768.1 MB files=8
+    trino q10        cold= 75.52s warm_med=  6.81s read=  2341.4 MB
+    trino agg_scan   cold= 51.99s warm_med=  3.54s read=  2079.9 MB
+    trino agg_narrow cold= 46.25s warm_med=  1.34s read=  1655.7 MB
+Traceback (most recent call last):
+  File "C:\Users\Alexander\source\repos\oti-lab1\p1\bench\benchmark.py", line 170, in <module>
+    main()
+  File "C:\Users\Alexander\source\repos\oti-lab1\p1\bench\benchmark.py", line 156, in main
+    rec["spark"] = spark_queries(fmt, codec)
+  File "C:\Users\Alexander\source\repos\oti-lab1\p1\bench\benchmark.py", line 100, in spark_queries
+    out = sh(f"docker exec spark spark-submit --driver-java-options -Dlog4j.rootCategory=ERROR "
+  File "C:\Users\Alexander\source\repos\oti-lab1\p1\bench\benchmark.py", line 38, in sh
+    return subprocess.run(cmd, shell=isinstance(cmd, str), check=True, capture_output=True, text=True).stdout
+  File "C:\Users\Alexander\AppData\Local\Programs\Python\Python310\lib\subprocess.py", line 524, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command 'docker exec spark spark-submit --driver-java-options -Dlog4j.rootCategory=ERROR /opt/jobs/bench_queries.py --prefix bench.parquet_zstd_ --runs 3' returned non-zero exit status 1.
+##### 2026-10-18 01:06:42 sf1: матрица форматов/кодеков (эффект малого объёма)
+skip PARQUET/NONE (уже есть)
+skip PARQUET/SNAPPY (уже есть)
+skip PARQUET/LZ4 (уже есть)
+skip PARQUET/ZSTD (уже есть)
+skip PARQUET/GZIP (уже есть)
+skip ORC/NONE (уже есть)
+skip ORC/SNAPPY (уже есть)
+skip ORC/LZ4 (уже есть)
+skip ORC/ZSTD (уже есть)
+skip ORC/GZIP (уже есть)
+bronze bucket after run: 21.49 GiB
+##### 2026-10-18 01:06:44 sf50: медальон Bronze -> Silver -> Gold + сверка
+##### 2026-10-18 01:06:44 sf10: источник бенчмарка bronze.src_sf10
+##### 2026-10-18 01:06:44 sf10: матрица форматов/кодеков
+== PARQUET / NONE
+    write customer      7.6s cpu=     4.6s     233.9 MB files=3
+    write orders       26.6s cpu=    32.5s    1151.8 MB files=4
+    write lineitem     97.9s cpu=   160.6s    3656.4 MB files=4
+    trino q10        cold= 39.12s warm_med=  2.01s read=  1416.9 MB
+    trino agg_scan   cold= 16.24s warm_med=  0.80s read=   669.3 MB
+    trino agg_narrow cold= 14.98s warm_med=  0.32s read=   546.8 MB
+    spark q10        cold= 68.42s warm_med= 15.26s
+    spark agg_scan   cold=  4.67s warm_med=  1.96s
+    spark agg_narrow cold=  0.70s warm_med=  0.63s
+    meta: codec=['UNCOMPRESSED'] footer=61 KB
+== PARQUET / SNAPPY
+    write customer      6.3s cpu=     4.6s     118.2 MB files=3
+    write orders       19.7s cpu=    39.0s     549.3 MB files=4
+    write lineitem     83.3s cpu=   184.1s    2010.0 MB files=4
+    trino q10        cold= 24.42s warm_med=  2.15s read=   740.6 MB
+    trino agg_scan   cold= 11.79s warm_med=  0.83s read=   511.8 MB
+    trino agg_narrow cold= 10.57s warm_med=  0.32s read=   417.1 MB
+    spark q10        cold= 47.90s warm_med= 14.36s
+    spark agg_scan   cold=  2.05s warm_med=  1.74s
+    spark agg_narrow cold=  0.77s warm_med=  0.60s
+    meta: codec=['SNAPPY'] footer=35 KB
+== PARQUET / LZ4
+    НЕ ПОДДЕРЖИВАЕТСЯ: NOT_SUPPORTED: Compression codec LZ4 not supported for Parquet
+== PARQUET / ZSTD
+    write customer      4.6s cpu=     5.4s      77.9 MB files=3
+    write orders       17.8s cpu=    40.8s     369.3 MB files=4
+    write lineitem     73.9s cpu=   190.3s    1493.8 MB files=4
+    trino q10        cold= 15.98s warm_med=  2.10s read=   466.7 MB
+    trino agg_scan   cold=  9.78s warm_med=  0.80s read=   415.7 MB
+    trino agg_narrow cold=  8.52s warm_med=  0.29s read=   331.5 MB
+    spark q10        cold= 34.04s warm_med= 14.52s
+    spark agg_scan   cold=  1.78s warm_med=  1.52s
+    spark agg_narrow cold=  0.70s warm_med=  0.53s
+    meta: codec=['ZSTD'] footer=28 KB
+== PARQUET / GZIP
+    write customer      9.6s cpu=    13.3s      76.7 MB files=3
+    write orders       29.2s cpu=    88.2s     356.1 MB files=4
+    write lineitem    108.8s cpu=   341.9s    1461.1 MB files=4
+    trino q10        cold= 15.75s warm_med=  2.33s read=   469.4 MB
+    trino agg_scan   cold= 10.19s warm_med=  0.93s read=   403.2 MB
+    trino agg_narrow cold=  8.81s warm_med=  0.41s read=   319.8 MB
+    spark q10        cold= 39.10s warm_med=  7.64s
+    spark agg_scan   cold=  2.15s warm_med=  1.74s
+    spark agg_narrow cold=  0.69s warm_med=  0.63s
+    meta: codec=['GZIP'] footer=26 KB
+== ORC / NONE
+    write customer      8.8s cpu=     4.9s     214.9 MB files=3
+    write orders       30.9s cpu=    37.5s    1058.4 MB files=4
+    write lineitem    137.7s cpu=   181.6s    4737.6 MB files=8
+    trino q10        cold= 56.81s warm_med=  2.02s read=  1371.0 MB
+    trino agg_scan   cold= 55.46s warm_med=  1.98s read=  1626.9 MB
+    trino agg_narrow cold= 37.90s warm_med=  0.43s read=   574.6 MB
+    spark q10        cold=100.95s warm_med= 34.56s
+    spark agg_scan   cold= 11.10s warm_med= 13.12s
+    spark agg_narrow cold=  5.77s warm_med=  5.14s
+    meta: codec=['NONE'] footer=53 KB
+== ORC / SNAPPY
+    write customer      7.1s cpu=     5.0s     106.8 MB files=3
+    write orders       17.1s cpu=    40.3s     463.6 MB files=4
+    write lineitem     86.6s cpu=   193.5s    2188.8 MB files=4
+    trino q10        cold= 36.14s warm_med=  1.97s read=   722.6 MB
+    trino agg_scan   cold= 32.62s warm_med=  1.80s read=   739.9 MB
+    trino agg_narrow cold= 24.51s warm_med=  0.38s read=   446.9 MB
+    spark q10        cold= 60.86s warm_med= 20.00s
+    spark agg_scan   cold=  6.78s warm_med=  6.54s
+    spark agg_narrow cold=  5.13s warm_med=  5.01s
+    meta: codec=['SNAPPY'] footer=11 KB
+== ORC / LZ4
+    write customer      8.9s cpu=     4.4s     112.0 MB files=3
+    write orders       18.7s cpu=    38.0s     488.0 MB files=4
+    write lineitem     77.8s cpu=   180.7s    2374.2 MB files=4
+    trino q10        cold= 44.58s warm_med=  1.79s read=   767.6 MB
+    trino agg_scan   cold= 33.17s warm_med=  1.50s read=   847.0 MB
+    trino agg_narrow cold= 21.85s warm_med=  0.32s read=   440.2 MB
+    spark q10        cold= 63.07s warm_med= 15.08s
+    spark agg_scan   cold=  6.66s warm_med=  6.26s
+    spark agg_narrow cold=  4.86s warm_med=  4.83s
+    meta: codec=['LZ4'] footer=13 KB
+== ORC / ZSTD
+    write customer      6.1s cpu=     4.5s      71.6 MB files=3
+    write orders       17.6s cpu=    40.3s     337.8 MB files=4
+    write lineitem     70.9s cpu=   194.5s    1587.9 MB files=4
+    trino q10        cold= 24.25s warm_med=  1.94s read=   525.3 MB
+    trino agg_scan   cold= 22.34s warm_med=  1.57s read=   506.3 MB
+    trino agg_narrow cold= 15.97s warm_med=  0.28s read=   332.7 MB
+    spark q10        cold= 48.14s warm_med= 12.46s
+    spark agg_scan   cold=  6.29s warm_med=  6.00s
+    spark agg_narrow cold=  4.75s warm_med=  4.56s
+    meta: codec=['ZSTD'] footer=8 KB
+== ORC / GZIP
+    write customer      6.5s cpu=     7.2s      72.4 MB files=3
+    write orders       18.7s cpu=    51.8s     331.0 MB files=4
+    write lineitem     79.6s cpu=   252.4s    1542.1 MB files=4
+    trino q10        cold= 22.00s warm_med=  2.19s read=   509.9 MB
+    trino agg_scan   cold= 20.89s warm_med=  1.71s read=   495.4 MB
+    trino agg_narrow cold= 15.57s warm_med=  0.38s read=   330.4 MB
+    spark q10        cold= 44.99s warm_med= 17.00s
+    spark agg_scan   cold=  6.12s warm_med=  5.94s
+    spark agg_narrow cold=  4.77s warm_med=  4.68s
+    meta: codec=['ZLIB'] footer=9 KB
+bronze bucket after run: 13.59 GiB
+##### 2026-10-18 02:10:33 sf10: опыт с метаданными
+== load
+  load times: {'one_ctas': 17.221, 'many_commits': 131.4, 'tiny_files': 80.971}
+== measure
+  one_ctas                 files=    12 manifests=   1 snaps=  1 meta=   0.18 MB avg_file=  31530.1 KB cold=  5.21s warm=  0.16s plan=15 ms
+  many_commits             files=    80 manifests=  80 snaps= 81 meta=  15.55 MB avg_file=   4757.0 KB cold=  1.70s warm=  0.13s plan=53 ms
+  tiny_files               files=   920 manifests=   1 snaps=  1 meta=   0.27 MB avg_file=    435.4 KB cold= 32.44s warm=  0.63s plan=29 ms
+  many_commits_maintained  files=     1 manifests=   1 snaps=  1 meta=   1.75 MB avg_file= 385845.5 KB cold=  3.93s warm=  0.13s plan=13 ms
+  tiny_files_maintained    files=     1 manifests=   1 snaps=  1 meta=   0.02 MB avg_file= 378191.6 KB cold=  2.96s warm=  0.17s plan=14 ms
+saved C:\Users\Alexander\source\repos\oti-lab1\p1\results\metadata_sf10.json
+##### 2026-10-18 02:17:40 sf10: опыт с кэшированием
+  trino q10       jvm_cold         32.85s  cpu=   15.2s read=    469.2 MB
+  trino q10       os_cold          17.71s  cpu=    7.2s read=    469.2 MB
+  trino q10       os_warm           2.19s  cpu=    8.4s read=    469.2 MB
+  trino q10       fs_cache_fill    42.27s  cpu=   14.3s read=    469.2 MB
+  trino q10       fs_cache_hit     17.19s  cpu=    7.0s read=    469.2 MB
+  trino q10       fs_cache_warm     2.12s  cpu=    8.0s read=    469.2 MB
+  trino agg_scan  jvm_cold         26.98s  cpu=    9.0s read=    415.5 MB
+  trino agg_scan  os_cold          13.37s  cpu=    3.7s read=    415.5 MB
+  trino agg_scan  os_warm           1.00s  cpu=    6.4s read=    415.5 MB
+  trino agg_scan  fs_cache_fill    33.77s  cpu=    9.7s read=    415.5 MB
+  trino agg_scan  fs_cache_hit     10.90s  cpu=    3.3s read=    415.5 MB
+  trino agg_scan  fs_cache_warm     0.91s  cpu=    6.1s read=    415.5 MB
+  cold floor (raw_nation after drop_caches): 0.05s
+  spark {'q10': {'cold_s': 42.713, 'warm_median_s': 10.135, 'warm_min_s': 3.747, 'result_rows': 20, 'cached_median_s': 49.783}, 'agg_scan': {'cold_s': 2.391, 'warm_median_s': 1.739, 'warm_min_s': 1.642, 'result_rows': 4, 'cached_median_s': 9.159}, 'agg_narrow': {'cold_s': 0.569, 'warm_median_s': 0.515, 'warm_min_s': 0.485, 'result_rows': 1, 'cached_median_s': 0.882}}
+saved C:\Users\Alexander\source\repos\oti-lab1\p1\results\cache_sf10.json
+##### 2026-10-18 02:33:38 DONE

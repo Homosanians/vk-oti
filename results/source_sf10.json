@@ -1,0 +1,26 @@
+{
+  "sf": 10,
+  "schema": "bronze.src_sf10",
+  "tables": {
+    "nation": {
+      "rows": 25,
+      "bytes": 2306,
+      "write_s": 4.967
+    },
+    "customer": {
+      "rows": 1500000,
+      "bytes": 81677120,
+      "write_s": 5.555
+    },
+    "orders": {
+      "rows": 15000000,
+      "bytes": 387627910,
+      "write_s": 15.247
+    },
+    "lineitem": {
+      "rows": 59986052,
+      "bytes": 1568664625,
+      "write_s": 59.987
+    }
+  }
+}

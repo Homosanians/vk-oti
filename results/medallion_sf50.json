@@ -1,0 +1,26 @@
+{
+  "bronze": {
+    "cold_s": 84.697,
+    "cold_cpu_s": 33.949,
+    "cold_read_mb": 2339.0,
+    "warm_median_s": 7.397,
+    "warm_cpu_median_s": 47.514,
+    "rows": 20
+  },
+  "silver": {
+    "cold_s": 14.519,
+    "cold_cpu_s": 10.031,
+    "cold_read_mb": 461.9,
+    "warm_median_s": 2.581,
+    "warm_cpu_median_s": 12.398,
+    "rows": 20
+  },
+  "gold": {
+    "cold_s": 0.24,
+    "cold_cpu_s": 0.008,
+    "cold_read_mb": 0.0,
+    "warm_median_s": 0.042,
+    "warm_cpu_median_s": 0.004,
+    "rows": 20
+  }
+}

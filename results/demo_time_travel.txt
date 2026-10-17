@@ -1,0 +1,43 @@
+
+-- Состояние Gold до «аварии»
+
+trino> SELECT count(*) AS rows, sum(revenue) AS total FROM gold.lakehouse.q10_top20_returned_customers;
+rows | total
+20 | 15758387.00
+
+-- Запоминаем «хороший» снапшот: 9158512213978696636
+
+-- Авария: ошибочный DELETE удалил половину витрины
+
+trino> DELETE FROM gold.lakehouse.q10_top20_returned_customers WHERE revenue < (SELECT approx_percentile(revenue, 0.5) FROM gold.lakehouse.q10_top20_returned_customers);
+rows
+10
+
+trino> SELECT count(*) AS rows, sum(revenue) AS total FROM gold.lakehouse.q10_top20_returned_customers;
+rows | total
+10 | 8127872.49
+
+-- Time travel: читаем витрину на момент хорошего снапшота (FOR VERSION AS OF / FOR TIMESTAMP AS OF)
+
+trino> SELECT count(*) AS rows, sum(revenue) AS total FROM gold.lakehouse.q10_top20_returned_customers FOR VERSION AS OF 9158512213978696636;
+rows | total
+20 | 15758387.00
+
+trino> SELECT committed_at, snapshot_id, parent_id, operation FROM gold.lakehouse."q10_top20_returned_customers$snapshots" ORDER BY committed_at;
+committed_at | snapshot_id | parent_id | operation
+2026-10-17 14:05:32.961 UTC | 9158512213978696636 | None | append
+2026-10-18 00:05:20.423 UTC | 254486522524726081 | 9158512213978696636 | delete
+
+-- Восстановление: откат указателя текущего снапшота (данные не копируются, старые файлы ещё на месте, пока не сделан expire_snapshots)
+
+trino> ALTER TABLE gold.lakehouse.q10_top20_returned_customers EXECUTE rollback_to_snapshot(9158512213978696636);
+rows
+
+trino> SELECT count(*) AS rows, sum(revenue) AS total FROM gold.lakehouse.q10_top20_returned_customers;
+rows | total
+20 | 15758387.00
+
+trino> SELECT made_current_at, snapshot_id, is_current_ancestor FROM gold.lakehouse."q10_top20_returned_customers$history" ORDER BY made_current_at;
+made_current_at | snapshot_id | is_current_ancestor
+2026-10-17 14:05:32.961 UTC | 9158512213978696636 | True
+2026-10-18 00:05:20.423 UTC | 254486522524726081 | False

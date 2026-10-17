@@ -1,0 +1,434 @@
+{
+  "sf": 50,
+  "bronze_format": "PARQUET",
+  "bronze_codec": "ZSTD",
+  "layer_codec": {
+    "silver": "ZSTD",
+    "gold": "SNAPPY"
+  },
+  "steps": {
+    "silver": {
+      "codec": "ZSTD",
+      "wall_s": 694.6,
+      "statements": [
+        {
+          "sql": "DROP TABLE IF EXISTS silver.lakehouse.dim_customer",
+          "elapsed_s": 0.622,
+          "cpu_s": 0.0
+        },
+        {
+          "sql": "DROP TABLE IF EXISTS silver.lakehouse.fact_order_line",
+          "elapsed_s": 0.014,
+          "cpu_s": 0.0
+        },
+        {
+          "sql": "DROP TABLE IF EXISTS silver.lakehouse.dq_report",
+          "elapsed_s": 0.012,
+          "cpu_s": 0.0
+        },
+        {
+          "sql": "CREATE TABLE silver.lakehouse.dim_customer WITH (format = 'PARQUET') AS WITH dedup AS ( -- защита от дублей при повторно",
+          "elapsed_s": 25.574,
+          "cpu_s": 67.96
+        },
+        {
+          "sql": "CREATE TABLE silver.lakehouse.fact_order_line WITH ( format = 'PARQUET', partitioning = ARRAY['month(orderdate)'], sorte",
+          "elapsed_s": 0.488,
+          "cpu_s": 0.019
+        },
+        {
+          "sql": "INSERT INTO silver.lakehouse.fact_order_line SELECT l.orderkey, l.linenumber, o.custkey, o.orderdate, o.orderstatus, upp",
+          "elapsed_s": 132.958,
+          "cpu_s": 528.382
+        },
+        {
+          "sql": "INSERT INTO silver.lakehouse.fact_order_line SELECT l.orderkey, l.linenumber, o.custkey, o.orderdate, o.orderstatus, upp",
+          "elapsed_s": 103.705,
+          "cpu_s": 545.78
+        },
+        {
+          "sql": "INSERT INTO silver.lakehouse.fact_order_line SELECT l.orderkey, l.linenumber, o.custkey, o.orderdate, o.orderstatus, upp",
+          "elapsed_s": 92.574,
+          "cpu_s": 540.422
+        },
+        {
+          "sql": "INSERT INTO silver.lakehouse.fact_order_line SELECT l.orderkey, l.linenumber, o.custkey, o.orderdate, o.orderstatus, upp",
+          "elapsed_s": 95.882,
+          "cpu_s": 506.88
+        },
+        {
+          "sql": "INSERT INTO silver.lakehouse.fact_order_line SELECT l.orderkey, l.linenumber, o.custkey, o.orderdate, o.orderstatus, upp",
+          "elapsed_s": 85.5,
+          "cpu_s": 521.629
+        },
+        {
+          "sql": "INSERT INTO silver.lakehouse.fact_order_line SELECT l.orderkey, l.linenumber, o.custkey, o.orderdate, o.orderstatus, upp",
+          "elapsed_s": 82.44,
+          "cpu_s": 497.278
+        },
+        {
+          "sql": "INSERT INTO silver.lakehouse.fact_order_line SELECT l.orderkey, l.linenumber, o.custkey, o.orderdate, o.orderstatus, upp",
+          "elapsed_s": 62.098,
+          "cpu_s": 321.508
+        },
+        {
+          "sql": "CREATE TABLE silver.lakehouse.dq_report WITH (format = 'PARQUET') AS SELECT 'bronze.raw_customer: дубли custkey' AS rule",
+          "elapsed_s": 12.527,
+          "cpu_s": 88.102
+        }
+      ]
+    },
+    "gold": {
+      "codec": "SNAPPY",
+      "wall_s": 54.4,
+      "statements": [
+        {
+          "sql": "DROP TABLE IF EXISTS gold.lakehouse.returned_revenue_by_customer_quarter",
+          "elapsed_s": 0.093,
+          "cpu_s": 0.0
+        },
+        {
+          "sql": "DROP TABLE IF EXISTS gold.lakehouse.q10_top20_returned_customers",
+          "elapsed_s": 0.032,
+          "cpu_s": 0.0
+        },
+        {
+          "sql": "CREATE TABLE gold.lakehouse.returned_revenue_by_customer_quarter WITH (format = 'PARQUET', partitioning = ARRAY['year(or",
+          "elapsed_s": 45.43,
+          "cpu_s": 38.792
+        },
+        {
+          "sql": "CREATE TABLE gold.lakehouse.q10_top20_returned_customers WITH (format = 'PARQUET') AS SELECT c.custkey, c.name, CAST(sum",
+          "elapsed_s": 8.798,
+          "cpu_s": 10.732
+        }
+      ]
+    }
+  },
+  "tables": [
+    {
+      "table": "bronze.lakehouse.raw_nation",
+      "rows": 25,
+      "files": 1,
+      "bytes": 2306,
+      "mb": 0.0,
+      "snapshots": 1
+    },
+    {
+      "table": "bronze.lakehouse.raw_customer",
+      "rows": 7500000,
+      "files": 12,
+      "bytes": 408095832,
+      "mb": 389.19,
+      "snapshots": 1
+    },
+    {
+      "table": "bronze.lakehouse.raw_orders",
+      "rows": 75000000,
+      "files": 16,
+      "bytes": 1965602558,
+      "mb": 1874.54,
+      "snapshots": 1
+    },
+    {
+      "table": "bronze.lakehouse.raw_lineitem",
+      "rows": 300005811,
+      "files": 16,
+      "bytes": 8143319981,
+      "mb": 7766.08,
+      "snapshots": 1
+    },
+    {
+      "table": "silver.lakehouse.dim_customer",
+      "rows": 7500000,
+      "files": 13,
+      "bytes": 432771725,
+      "mb": 412.72,
+      "snapshots": 1
+    },
+    {
+      "table": "silver.lakehouse.fact_order_line",
+      "rows": 300005811,
+      "files": 146,
+      "bytes": 4461360621,
+      "mb": 4254.69,
+      "snapshots": 8
+    },
+    {
+      "table": "silver.lakehouse.dq_report",
+      "rows": 6,
+      "files": 6,
+      "bytes": 4071,
+      "mb": 0.0,
+      "snapshots": 1
+    },
+    {
+      "table": "gold.lakehouse.returned_revenue_by_customer_quarter",
+      "rows": 25432805,
+      "files": 9,
+      "bytes": 311025450,
+      "mb": 296.62,
+      "snapshots": 1
+    },
+    {
+      "table": "gold.lakehouse.q10_top20_returned_customers",
+      "rows": 20,
+      "files": 1,
+      "bytes": 3857,
+      "mb": 0.0,
+      "snapshots": 1
+    }
+  ],
+  "dq_report": [
+    [
+      "bronze.raw_customer: дубли custkey",
+      0
+    ],
+    [
+      "bronze.raw_lineitem: строки без заказа в orders",
+      0
+    ],
+    [
+      "silver.dim_customer: страна не найдена",
+      0
+    ],
+    [
+      "silver.fact_order_line: потеряно строк относительно bronze.raw_lineitem",
+      0
+    ],
+    [
+      "bronze.raw_lineitem: discount вне [0,1] или цена < 0",
+      0
+    ],
+    [
+      "silver.dim_customer: код телефона != nationkey+10 (правило TPC-H)",
+      0
+    ]
+  ],
+  "gold_q10": {
+    "query_id": "20261017_140534_00045_nwz9n",
+    "columns": [
+      "custkey",
+      "name",
+      "revenue",
+      "acctbal",
+      "nation",
+      "address",
+      "phone",
+      "comment"
+    ],
+    "rows": [
+      [
+        3872296,
+        "Customer#003872296",
+        "907520.63",
+        "7171.94",
+        "JORDAN",
+        "sDWuffFPY3GaWfw4xJVQMcHdhAP8iy",
+        "23-586-900-6141",
+        "oss the ironic braids dazzle slyly special, unusual courts. always ironic depos"
+      ],
+      [
+        6581440,
+        "Customer#006581440",
+        "821712.72",
+        "9701.39",
+        "ALGERIA",
+        ",,ZrWKHiYMyavUmqi5Cir9xtlcVKGV7nn",
+        "10-382-662-8278",
+        "ar tithes. fluffily even ideas sleep about the carefully ironic theodolites. special pint"
+      ],
+      [
+        533257,
+        "Customer#000533257",
+        "819958.20",
+        "220.13",
+        "FRANCE",
+        "39P6E 0MBX",
+        "16-355-151-3994",
+        "across the bold dependencies use furiously across the regular, express pinto bea"
+      ],
+      [
+        503848,
+        "Customer#000503848",
+        "818945.05",
+        "1318.11",
+        "INDIA",
+        "ZqSyt69a8K3 pv7Vr7N6FzIZifeIIifDOZwx",
+        "18-161-983-2683",
+        "mptotes sleep always. express, final"
+      ],
+      [
+        4482559,
+        "Customer#004482559",
+        "812214.82",
+        "6976.91",
+        "INDONESIA",
+        "jE9zw4XVUJ4oL HBqZr",
+        "19-619-676-4112",
+        "en deposits haggle blithely. furiously ironic requests are blithely slyly ironic th"
+      ],
+      [
+        3856279,
+        "Customer#003856279",
+        "800112.29",
+        "7932.69",
+        "MOZAMBIQUE",
+        "JHKxyh 5Qbl1Q8yyPJrXq5A mSpI6wNQ",
+        "26-933-738-9071",
+        ". blithely final accounts after the deposits wake slyly express ideas. carefully even requests are carefully spe"
+      ],
+      [
+        1160332,
+        "Customer#001160332",
+        "794649.35",
+        "8126.41",
+        "JORDAN",
+        "4puuI905,tqN VvJ4Jif7Dn1YSXzz",
+        "23-801-564-8980",
+        "ously unusual pinto beans. carefully regular accounts cajole around the final ideas. ironi"
+      ],
+      [
+        686671,
+        "Customer#000686671",
+        "788418.08",
+        "1740.77",
+        "GERMANY",
+        "HIHFtoSg4TnKYDCKb",
+        "17-134-548-1150",
+        "usly ruthless ideas. special theodolites among the blithely ironic packages hag"
+      ],
+      [
+        2032474,
+        "Customer#002032474",
+        "784572.67",
+        "7751.49",
+        "MOZAMBIQUE",
+        "qn66hk9EMoJ",
+        "26-984-935-6839",
+        "deposits affix blithely slyly regular excuses. fluffily unu"
+      ],
+      [
+        4838866,
+        "Customer#004838866",
+        "779768.68",
+        "9370.09",
+        "VIETNAM",
+        "YNRi,rHXOLj7Q7qT0edZaG5r1qb4KLyUe",
+        "31-631-442-9437",
+        "g. bold pinto beans cajole. blithely final packages doub"
+      ],
+      [
+        3715462,
+        "Customer#003715462",
+        "775853.81",
+        "4011.68",
+        "JAPAN",
+        "P1sgdBmuLnj,WNVC8ECmAxgz4iZt87k",
+        "22-811-368-7132",
+        "hins. furiously ironic deposits wake sly"
+      ],
+      [
+        830131,
+        "Customer#000830131",
+        "774552.96",
+        "8835.35",
+        "KENYA",
+        "JcnbFhncUd aLtB",
+        "24-975-899-9579",
+        "are regular, bold deposits. ironic theodolites haggle slyly"
+      ],
+      [
+        5462536,
+        "Customer#005462536",
+        "768140.72",
+        "2853.51",
+        "EGYPT",
+        "fmEUadgcpDwlNw",
+        "14-119-471-9460",
+        "symptotes sleep regular, pending accounts. quickly careful deposits are among the pending deposits. never"
+      ],
+      [
+        142618,
+        "Customer#000142618",
+        "763187.84",
+        "9823.25",
+        "GERMANY",
+        "VRcUxAWAvPYp0ykH5soJG1p",
+        "17-277-893-8160",
+        "arls. pending pinto beans impress alongside of the car"
+      ],
+      [
+        629872,
+        "Customer#000629872",
+        "760921.07",
+        "1067.64",
+        "KENYA",
+        "QEBMqXgMtoaDjPMIUjevThj",
+        "24-959-490-2814",
+        "sits. blithely even packages sleep carefully acr"
+      ],
+      [
+        7381429,
+        "Customer#007381429",
+        "760793.42",
+        "6082.45",
+        "ROMANIA",
+        "wljqbCqMbDV62uGf,yWrRJ8xNY7",
+        "29-618-801-7110",
+        "ost slyly along the carefully regular packages. slyly regular packages cajole fluffily. slyly even multipliers sle"
+      ],
+      [
+        4723204,
+        "Customer#004723204",
+        "760713.19",
+        "8200.79",
+        "BRAZIL",
+        "l qP9mkRHz3wlHm6vh2le5UY7iE5",
+        "12-957-786-3379",
+        "express deposits are regular instructions. deposits cajole"
+      ],
+      [
+        3572626,
+        "Customer#003572626",
+        "759522.93",
+        "5576.71",
+        "PERU",
+        "X37GA bqbs9",
+        "27-271-651-8884",
+        "accounts haggle furiously regular patterns. ideas wake dogge"
+      ],
+      [
+        6032350,
+        "Customer#006032350",
+        "759006.63",
+        "4638.73",
+        "UNITED STATES",
+        "bG uzUn2MMfpdB4iTr7elllF2Y,h8WcyMJWgM6iT",
+        "34-924-198-4741",
+        "sly final requests. carefully even accounts affix fluffily regular packages. fluffily ironi"
+      ],
+      [
+        7125991,
+        "Customer#007125991",
+        "747821.94",
+        "7654.13",
+        "JAPAN",
+        "WYXwDutBFAhW",
+        "22-236-864-9126",
+        "ns-- theodolites wake against the quickly even frets. even, special packages boost ca"
+      ]
+    ],
+    "client_s": 0.09032360000128392,
+    "elapsed_s": 0.083,
+    "cpu_s": 0.012,
+    "physical_input_bytes": 3857,
+    "processed_rows": 20,
+    "peak_memory_bytes": 6782
+  },
+  "validation": {
+    "diff_rows": [],
+    "elapsed_s": 287.012,
+    "ok": true
+  }
+}

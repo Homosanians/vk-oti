@@ -1,0 +1,94 @@
+{
+  "sf": 10,
+  "trino": {
+    "q10": {
+      "jvm_cold": {
+        "elapsed_s": 32.847,
+        "cpu_s": 15.248,
+        "physical_input_bytes": 491972560
+      },
+      "os_cold": {
+        "elapsed_s": 17.714,
+        "cpu_s": 7.198,
+        "physical_input_bytes": 491972560
+      },
+      "os_warm": {
+        "elapsed_s": 2.19,
+        "cpu_s": 8.39,
+        "physical_input_bytes": 491972560
+      },
+      "fs_cache_fill": {
+        "elapsed_s": 42.275,
+        "cpu_s": 14.275,
+        "physical_input_bytes": 491972560
+      },
+      "fs_cache_hit": {
+        "elapsed_s": 17.193,
+        "cpu_s": 6.981,
+        "physical_input_bytes": 491972560
+      },
+      "fs_cache_warm": {
+        "elapsed_s": 2.116,
+        "cpu_s": 8.022,
+        "physical_input_bytes": 491972560
+      }
+    },
+    "agg_scan": {
+      "jvm_cold": {
+        "elapsed_s": 26.984,
+        "cpu_s": 9.036,
+        "physical_input_bytes": 435718662
+      },
+      "os_cold": {
+        "elapsed_s": 13.368,
+        "cpu_s": 3.722,
+        "physical_input_bytes": 435718662
+      },
+      "os_warm": {
+        "elapsed_s": 0.998,
+        "cpu_s": 6.424,
+        "physical_input_bytes": 435718662
+      },
+      "fs_cache_fill": {
+        "elapsed_s": 33.774,
+        "cpu_s": 9.674,
+        "physical_input_bytes": 435718662
+      },
+      "fs_cache_hit": {
+        "elapsed_s": 10.899,
+        "cpu_s": 3.293,
+        "physical_input_bytes": 435718662
+      },
+      "fs_cache_warm": {
+        "elapsed_s": 0.907,
+        "cpu_s": 6.119,
+        "physical_input_bytes": 435718662
+      }
+    }
+  },
+  "spark": {
+    "q10": {
+      "cold_s": 42.713,
+      "warm_median_s": 10.135,
+      "warm_min_s": 3.747,
+      "result_rows": 20,
+      "cached_median_s": 49.783
+    },
+    "agg_scan": {
+      "cold_s": 2.391,
+      "warm_median_s": 1.739,
+      "warm_min_s": 1.642,
+      "result_rows": 4,
+      "cached_median_s": 9.159
+    },
+    "agg_narrow": {
+      "cold_s": 0.569,
+      "warm_median_s": 0.515,
+      "warm_min_s": 0.485,
+      "result_rows": 1,
+      "cached_median_s": 0.882
+    }
+  },
+  "os_cold_floor_s": 0.051,
+  "trino_cache_dir_bytes": 479369654
+}

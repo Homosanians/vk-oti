@@ -1,0 +1,89 @@
+
+### Каталог bronze: пространства имён
++---------+
+|namespace|
++---------+
+|lakehouse|
+|    bench|
+| src_sf10|
++---------+
+
+
+### Таблицы Bronze
++---------+------------+-----------+
+|namespace|   tableName|isTemporary|
++---------+------------+-----------+
+|lakehouse|  raw_nation|      false|
+|lakehouse|raw_customer|      false|
+|lakehouse|  raw_orders|      false|
+|lakehouse|raw_lineitem|      false|
++---------+------------+-----------+
+
+
+### Схема raw_lineitem (её записал Trino, читает Spark)
++-------------+---------+-------+
+|     col_name|data_type|comment|
++-------------+---------+-------+
+|     orderkey|   bigint|   NULL|
+|      partkey|   bigint|   NULL|
+|      suppkey|   bigint|   NULL|
+|   linenumber|      int|   NULL|
+|     quantity|   double|   NULL|
+|extendedprice|   double|   NULL|
+|     discount|   double|   NULL|
+|          tax|   double|   NULL|
+|   returnflag|   string|   NULL|
+|   linestatus|   string|   NULL|
+|     shipdate|     date|   NULL|
+|   commitdate|     date|   NULL|
+|  receiptdate|     date|   NULL|
+| shipinstruct|   string|   NULL|
+|     shipmode|   string|   NULL|
+|      comment|   string|   NULL|
+|      _source|   string|   NULL|
+|   _loaded_at|timestamp|   NULL|
++-------------+---------+-------+
+
+
+### Число строк в Bronze
+raw_nation               25
+raw_customer      7,500,000
+raw_orders       75,000,000
+raw_lineitem    300,005,811
+
+### Метаданные Iceberg: снапшоты raw_lineitem
++-----------------------+-------------------+---------+-------------+-----------+
+|           committed_at|        snapshot_id|operation|added_records|added_bytes|
++-----------------------+-------------------+---------+-------------+-----------+
+|2026-10-17 13:50:29.989|2821139685994911757|   append|    300005811| 8143319981|
++-----------------------+-------------------+---------+-------------+-----------+
+
+
+### Метаданные Iceberg: файлы raw_lineitem (формат, строки, размер)
++-----------+-----+---------+------+
+|file_format|files|     rows|    mb|
++-----------+-----+---------+------+
+|    PARQUET|   16|300005811|7766.1|
++-----------+-----+---------+------+
+
+
+### Q10 на Spark DataFrame API по Bronze (топ-5 из 20)
++-------+------------------+---------+---------+
+|custkey|              name|  revenue|   nation|
++-------+------------------+---------+---------+
+|3872296|Customer#003872296|907520.63|   JORDAN|
+|6581440|Customer#006581440|821712.72|  ALGERIA|
+| 533257|Customer#000533257| 819958.2|   FRANCE|
+| 503848|Customer#000503848|818945.05|    INDIA|
+|4482559|Customer#004482559|812214.82|INDONESIA|
++-------+------------------+---------+---------+
+only showing top 5 rows
+
+
+### План: Iceberg-скан с pushdown фильтров (фрагмент)
++------------------------------------------------------------+
+|                                                        plan|
++------------------------------------------------------------+
+|*(1) Project [orderkey#409L]\n+- *(1) Filter (isnotnull(r...|
++------------------------------------------------------------+
+
